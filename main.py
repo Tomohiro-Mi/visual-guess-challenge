@@ -2,7 +2,9 @@
 Visual Guess Challenge - メインアプリケーション
 PyQtを使用したGUIアプリケーションのメインウィンドウ
 """
-
+"""
+動作確認
+"""
 import sys
 from PyQt5.QtWidgets import (
     QApplication,
