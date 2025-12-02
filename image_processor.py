@@ -43,6 +43,7 @@ class ImageProcessor:
     def apply_zoom(self, image, progress):
         """
         progress: 0.0 (開始) -> 1.0 (クリア)
+        アフィン変換を使用してサブピクセル精度で滑らかにズームアウト
         """
         if image is None:
             return None
@@ -56,23 +57,37 @@ class ImageProcessor:
         # 線形補間: min_ratio から 1.0 へ変化
         current_ratio = min_ratio + (1.0 - min_ratio) * progress
 
-        # 切り出しサイズ計算
-        crop_width = int(width * current_ratio)
-        crop_height = int(height * current_ratio)
+        # 中心座標（浮動小数点精度）
+        cx = width / 2.0
+        cy = height / 2.0
 
-        # 中心座標
-        cx, cy = width // 2, height // 2
+        # アフィン変換を使用して滑らかにズームアウト
+        # スケール係数: current_ratioが小さいほど拡大（ズームイン）、大きいほど縮小（ズームアウト）
+        # 目標は元画像の中心部分をcurrent_ratioのサイズで切り出して、元サイズに拡大すること
+        scale = 1.0 / current_ratio
+        
+        # アフィン変換行列: 中心を基準に拡大し、出力画像の中心に配置
+        # M = [[scale, 0, tx],
+        #      [0, scale, ty]]
+        # 変換式: dst(x,y) = src(scale*x + tx, scale*y + ty)
+        # 中心(cx, cy)が常に出力画像の中心(width/2, height/2)に対応するように設定
+        tx = (width / 2.0) - (cx * scale)
+        ty = (height / 2.0) - (cy * scale)
+        
+        M = np.array([[scale, 0, tx],
+                      [0, scale, ty]], dtype=np.float32)
 
-        # 切り出し範囲 (範囲外に出ないようクリップ)
-        x1 = max(0, cx - crop_width // 2)
-        y1 = max(0, cy - crop_height // 2)
-        x2 = min(width, x1 + crop_width)
-        y2 = min(height, y1 + crop_height)
-
-        cropped = image[y1:y2, x1:x2]
-
-        # 元サイズにリサイズ
-        return cv2.resize(cropped, (width, height), interpolation=cv2.INTER_LINEAR)
+        # アフィン変換を適用（サブピクセル精度で滑らかに処理）
+        result = cv2.warpAffine(
+            image, 
+            M, 
+            (width, height), 
+            flags=cv2.INTER_CUBIC,  # より滑らかな補間
+            borderMode=cv2.BORDER_CONSTANT,
+            borderValue=(0, 0, 0)  # はみ出した部分は黒で塗りつぶし
+        )
+        
+        return result
 
     def apply_hybrid(self, image, progress):
         # ズームとぼかしを組み合わせる
