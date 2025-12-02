@@ -18,6 +18,7 @@ from PyQt5.QtWidgets import (
     QMessageBox,
     QFileDialog,
     QDesktopWidget,
+    QSizePolicy,
 )
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QPixmap, QImage
@@ -113,7 +114,9 @@ class MainWindow(QMainWindow):
         # 情報表示エリア
         info_layout = QHBoxLayout()
         self.time_label = QLabel("経過時間：00.0s")
+        self.time_label.setFixedWidth(150)  # 幅を固定して揺れを防ぐ
         self.score_label = QLabel("スコア：---")
+        self.score_label.setFixedWidth(120)  # 幅を固定して揺れを防ぐ
         info_layout.addWidget(self.time_label)
         info_layout.addWidget(self.score_label)
         info_layout.addWidget(self.progress_bar)
@@ -127,6 +130,7 @@ class MainWindow(QMainWindow):
             "border: 2px solid gray; background-color: #f0f0f0;"
         )
         self.image_label.setText("画像がここに表示されます")
+        self.image_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
 
         # 回答入力エリア
         answer_layout = QHBoxLayout()
@@ -152,7 +156,7 @@ class MainWindow(QMainWindow):
         main_layout.addLayout(mode_layout)
         main_layout.addLayout(control_layout)
         main_layout.addLayout(info_layout)
-        main_layout.addWidget(self.image_label)
+        main_layout.addWidget(self.image_label, 1)
         main_layout.addLayout(answer_layout)
         main_layout.addLayout(hint_layout)
 
