@@ -13,20 +13,26 @@ class TimerController:
         """初期化"""
         self.start_time = None
         self.is_running = False
+        self.stopped_time = None  # 停止時の経過時間を保存
         
     def start(self):
         """タイマーを開始"""
         self.start_time = time.time()
         self.is_running = True
-    
+        self.stopped_time = None  # リセット
+        
     def stop(self):
         """タイマーを停止"""
+        if self.is_running and self.start_time is not None:
+            # 停止時に経過時間を保存
+            self.stopped_time = time.time() - self.start_time
         self.is_running = False
     
     def reset(self):
         """タイマーをリセット"""
         self.start_time = None
         self.is_running = False
+        self.stopped_time = None
     
     def get_elapsed_time(self):
         """
@@ -41,8 +47,9 @@ class TimerController:
         if self.is_running:
             return time.time() - self.start_time
         else:
-            # 停止している場合は、停止時点までの経過時間を返す
-            # （現在は停止時の時間を保持していないので、最後の経過時間を返す）
+            # 停止している場合は、停止時に保存した経過時間を返す
+            if self.stopped_time is not None:
+                return self.stopped_time
             return 0.0
     
     def is_timer_running(self):
