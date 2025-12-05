@@ -168,7 +168,9 @@ class GameEngine:
     def calculate_score(self, elapsed_seconds):
         """
         スコアを計算
-
+        
+        計算式: スコア = 100 × (残り時間 / 制限時間)
+        
         Args:
             elapsed_seconds: 経過時間（秒）
 
@@ -182,10 +184,12 @@ class GameEngine:
         if self.time_limit <= 0:
             return 0
 
-        # 残り時間の割合をスコアとする (100点満点)
+        # 残り時間を計算
+        remaining_time = self.time_limit - elapsed_seconds
+        
+        # スコア = 100 × (残り時間 / 制限時間)
         # 時間経過とともに 100 -> 0 に線形で減少
-        ratio_remaining = 1.0 - (elapsed_seconds / self.time_limit)
-        score = 100 * ratio_remaining
+        score = 100 * (remaining_time / self.time_limit)
 
         return max(0, score)
 

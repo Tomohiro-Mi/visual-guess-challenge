@@ -32,7 +32,7 @@ class HomeScreen(QWidget):
     """ホーム画面"""
     
     start_game_signal = pyqtSignal()
-    
+
     def __init__(self):
         super().__init__()
         self.init_ui()
@@ -368,7 +368,7 @@ class GameScreen(QWidget):
         self.dataset_loader = DatasetLoader()
         self.progress_bar = ProgressBar()
         self.label_loader = LabelLoader()
-        
+
         # UIコンポーネント
         self.image_label = None
         self.answer_input = None
@@ -377,7 +377,7 @@ class GameScreen(QWidget):
         self.score_label = None
         self.question_counter_label = None
         self.next_button_visible = False
-        
+
         # タイマー
         self.update_timer = QTimer()
         self.update_timer.timeout.connect(self.update_display)
@@ -390,9 +390,9 @@ class GameScreen(QWidget):
         self.session_correct_count = 0  # 正解数
         self.session_is_active = False  # セッションが有効か
         self.session_used_images = set()  # セッション中に使用した画像のパスを記録
-        
+
         self.init_ui()
-    
+
     def init_ui(self):
         main_layout = QVBoxLayout()
         
@@ -402,7 +402,7 @@ class GameScreen(QWidget):
         back_button.clicked.connect(self.back_to_home_signal.emit)
         header_layout.addWidget(back_button)
         header_layout.addStretch()
-        
+
         # 操作ボタンエリア
         control_layout = QHBoxLayout()
         self.load_button = QPushButton("画像読み込み")
@@ -410,18 +410,18 @@ class GameScreen(QWidget):
         self.next_button = QPushButton("次へ")
         self.next_button.setVisible(False)
         reset_button = QPushButton("リセット")
-        
+
         self.load_button.clicked.connect(self.load_image)
         self.random_button.clicked.connect(self.load_random_image)
         self.next_button.clicked.connect(self.next_question)
         reset_button.clicked.connect(self.reset_game)
-        
+
         control_layout.addWidget(self.load_button)
         control_layout.addWidget(self.random_button)
         control_layout.addWidget(self.next_button)
         control_layout.addWidget(reset_button)
         control_layout.addStretch()
-        
+
         # 情報表示エリア
         info_layout = QHBoxLayout()
         self.time_label = QLabel("経過時間：00.0s")
@@ -451,7 +451,7 @@ class GameScreen(QWidget):
         hint_layout.addWidget(self.category_label)
         hint_layout.addStretch()
         hint_layout.addWidget(self.hint_label)
-        
+
         # 画像表示エリア
         self.image_label = QLabel()
         self.image_label.setAlignment(Qt.AlignCenter)
@@ -460,7 +460,7 @@ class GameScreen(QWidget):
             "border: 2px solid gray; background-color: #f0f0f0;"
         )
         self.image_label.setText("画像がここに表示されます")
-        
+
         # 回答入力エリア
         answer_layout = QHBoxLayout()
         answer_label = QLabel("回答入力：")
@@ -469,11 +469,11 @@ class GameScreen(QWidget):
         self.submit_button = QPushButton("回答する")
         self.submit_button.clicked.connect(self.submit_answer)
         self.answer_input.returnPressed.connect(self.submit_answer)
-        
+
         answer_layout.addWidget(answer_label)
         answer_layout.addWidget(self.answer_input)
         answer_layout.addWidget(self.submit_button)
-        
+
         # レイアウトの組み立て
         main_layout.addLayout(header_layout)
         main_layout.addLayout(control_layout)
@@ -505,7 +505,7 @@ class GameScreen(QWidget):
         """モードを設定（後方互換性のため）"""
         self.current_mode = mode
         self.session_is_active = False
-    
+
     def load_image(self):
         """画像を読み込む"""
         if not self.current_mode:
@@ -516,42 +516,42 @@ class GameScreen(QWidget):
         default_dir = os.path.join(os.path.dirname(__file__), "images")
         if not os.path.exists(default_dir):
             default_dir = os.path.dirname(__file__)
-        
+
         file_path, _ = QFileDialog.getOpenFileName(
             self,
             "画像を選択",
             default_dir,
             "Image Files (*.png *.jpg *.jpeg *.bmp *.gif)",
         )
-        
+
         if file_path:
             # ゲームエンジンの初期化
             self.game_engine = GameEngine(file_path, self.current_mode, label_loader=self.label_loader)
             self.timer_controller.start()
             self.update_display()
             self.update_timer.start(100)  # 100msごとに更新
-    
+
     def update_display(self):
         """画面の更新"""
         if not self.game_engine:
             return
-        
+
         # タイマー更新
         elapsed = self.timer_controller.get_elapsed_time()
         self.time_label.setText(f"経過時間：{elapsed:.1f}s")
-        
+
         # 画像表示
         processed_image = self.game_engine.get_processed_image(elapsed)
         if processed_image is not None:
             self.display_image(processed_image)
-        
+
         # 進行度表示
         time_limit = self.game_engine.time_limit
         if time_limit > 0:
             progress = min(1.0, elapsed / time_limit)
         else:
             progress = 1.0
-        
+
         # プログレスバーで進行度を表示
         self.progress_bar.update_progress(progress)
         
@@ -588,49 +588,51 @@ class GameScreen(QWidget):
             # 進行度が50%以下の場合はヒントを非表示
             self.category_label.setText("")
             self.hint_label.setText("")
-    
+
     def display_image(self, image):
         """画像を表示する"""
         if image is None:
             return
-        
+
         # 念のためメモリの連続性を確保
         if not image.flags["C_CONTIGUOUS"]:
             image = image.copy()
-        
+
         height, width, channel = image.shape
         bytes_per_line = 3 * width
-        
+
         q_image = QImage(
             image.data, width, height, bytes_per_line, QImage.Format_RGB888
         )
-        
+
         # QPixmapに変換して表示
         pixmap = QPixmap.fromImage(q_image)
         scaled_pixmap = pixmap.scaled(
             self.image_label.contentsRect().size(), Qt.KeepAspectRatio, Qt.SmoothTransformation
         )
         self.image_label.setPixmap(scaled_pixmap)
-    
+
     def submit_answer(self):
         """回答を提出"""
         if not self.game_engine:
             QMessageBox.warning(self, "警告", "先に画像を読み込んでください")
             return
-        
+
         answer = self.answer_input.text().strip()
         if not answer:
             QMessageBox.warning(self, "警告", "回答を入力してください")
             return
+
+        # 経過時間を取得（タイマー停止前に取得する必要がある）
+        elapsed = self.timer_controller.get_elapsed_time()
         
         # タイマー停止
         self.timer_controller.stop()
         self.update_timer.stop()
-        
+
         # 正答判定
         is_correct, correct_answer = self.game_engine.check_answer(answer)
-        elapsed = self.timer_controller.get_elapsed_time()
-        
+
         score = 0.0
         if is_correct:
             score = self.game_engine.calculate_score(elapsed)
@@ -678,7 +680,7 @@ class GameScreen(QWidget):
                 QMessageBox.warning(
                     self, "不正解", f"残念！正解は「{correct_answer}」でした。"
                 )
-    
+
     def end_session(self):
         """セッションを終了"""
         total_questions = self.session_question_count
@@ -761,13 +763,13 @@ class GameScreen(QWidget):
         self.random_button.setEnabled(True)
         self.submit_button.setEnabled(True)
         self.answer_input.setEnabled(True)
-    
+
     def load_random_image(self):
         """ランダムに画像を読み込む"""
         if not self.current_mode:
             QMessageBox.warning(self, "警告", "先にモードを選択してください")
             return
-        
+
         # セッション中の場合は、使用済み画像を除外
         if self.session_is_active:
             all_images = self.dataset_loader.get_all_images()
@@ -790,7 +792,7 @@ class GameScreen(QWidget):
         else:
             # セッション外の場合は通常通りランダム選択
             image_path = self.dataset_loader.get_random_image()
-        
+
         if image_path is None:
             QMessageBox.warning(
                 self,
@@ -799,7 +801,7 @@ class GameScreen(QWidget):
                 "imagesフォルダに画像ファイルを配置してください。",
             )
             return
-        
+
         # ゲームエンジンの初期化
         self.game_engine = GameEngine(image_path, self.current_mode, label_loader=self.label_loader)
         self.timer_controller.start()
