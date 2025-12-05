@@ -25,6 +25,7 @@ from game_engine import GameEngine
 from timer_controller import TimerController
 from dataset_loader import DatasetLoader
 from progress_bar import ProgressBar
+from label_loader import LabelLoader
 
 
 class HomeScreen(QWidget):
@@ -366,6 +367,7 @@ class GameScreen(QWidget):
         self.timer_controller = TimerController()
         self.dataset_loader = DatasetLoader()
         self.progress_bar = ProgressBar()
+        self.label_loader = LabelLoader()
         
         # UIコンポーネント
         self.image_label = None
@@ -387,6 +389,7 @@ class GameScreen(QWidget):
         self.session_scores = []  # 各問題のスコア
         self.session_correct_count = 0  # 正解数
         self.session_is_active = False  # セッションが有効か
+        self.session_used_images = set()  # セッション中に使用した画像のパスを記録
         
         self.init_ui()
     
@@ -436,10 +439,23 @@ class GameScreen(QWidget):
         info_layout.addWidget(self.progress_bar)
         info_layout.addStretch()
         
+        # ヒント表示エリア
+        hint_container = QWidget()
+        hint_container.setMaximumHeight(35)  # ヒント表示領域の最大高さを制限
+        hint_layout = QHBoxLayout(hint_container)
+        hint_layout.setContentsMargins(5, 2, 5, 2)  # 上下のマージンを小さく
+        self.hint_label = QLabel("")
+        self.hint_label.setStyleSheet("color: #666; font-style: italic; padding: 2px;")
+        self.category_label = QLabel("")
+        self.category_label.setStyleSheet("color: #0066cc; font-weight: bold; padding: 2px;")
+        hint_layout.addWidget(self.category_label)
+        hint_layout.addStretch()
+        hint_layout.addWidget(self.hint_label)
+        
         # 画像表示エリア
         self.image_label = QLabel()
         self.image_label.setAlignment(Qt.AlignCenter)
-        self.image_label.setMinimumHeight(300)
+        self.image_label.setMinimumHeight(450)  # 画像表示領域を拡大
         self.image_label.setStyleSheet(
             "border: 2px solid gray; background-color: #f0f0f0;"
         )
@@ -462,6 +478,7 @@ class GameScreen(QWidget):
         main_layout.addLayout(header_layout)
         main_layout.addLayout(control_layout)
         main_layout.addLayout(info_layout)
+        main_layout.addWidget(hint_container)  # hint_containerを使用
         main_layout.addWidget(self.image_label)
         main_layout.addLayout(answer_layout)
         
@@ -475,6 +492,7 @@ class GameScreen(QWidget):
         self.session_scores = []
         self.session_correct_count = 0
         self.session_is_active = True
+        self.session_used_images = set()  # 出題済み画像をリセット
         
         # UI更新
         self.question_counter_label.setText(f"問題：1/{question_count}")
@@ -508,7 +526,7 @@ class GameScreen(QWidget):
         
         if file_path:
             # ゲームエンジンの初期化
-            self.game_engine = GameEngine(file_path, self.current_mode)
+            self.game_engine = GameEngine(file_path, self.current_mode, label_loader=self.label_loader)
             self.timer_controller.start()
             self.update_display()
             self.update_timer.start(100)  # 100msごとに更新
@@ -536,6 +554,40 @@ class GameScreen(QWidget):
         
         # プログレスバーで進行度を表示
         self.progress_bar.update_progress(progress)
+        
+        # ヒント表示を更新（進行度50%を超えた場合のみ表示）
+        self.update_hint_display(progress)
+    
+    def update_hint_display(self, progress=0.0):
+        """
+        ヒント情報を表示（進行度が50%を超えた場合のみ）
+        
+        Args:
+            progress: 進行度（0.0-1.0）
+        """
+        if not self.game_engine:
+            self.category_label.setText("")
+            self.hint_label.setText("")
+            return
+        
+        # 進行度が50%を超えている場合のみヒントを表示
+        if progress > 0.5:
+            category = self.game_engine.get_category()
+            hint = self.game_engine.get_hint()
+            
+            if category:
+                self.category_label.setText(f"カテゴリ: {category}")
+            else:
+                self.category_label.setText("")
+            
+            if hint:
+                self.hint_label.setText(f"💡 {hint}")
+            else:
+                self.hint_label.setText("")
+        else:
+            # 進行度が50%以下の場合はヒントを非表示
+            self.category_label.setText("")
+            self.hint_label.setText("")
     
     def display_image(self, image):
         """画像を表示する"""
@@ -679,6 +731,8 @@ class GameScreen(QWidget):
         self.answer_input.clear()
         self.time_label.setText("経過時間：00.0s")
         self.progress_bar.setValue(0)
+        self.category_label.setText("")
+        self.hint_label.setText("")
     
     def reset_game(self):
         """ゲームをリセット"""
@@ -691,6 +745,8 @@ class GameScreen(QWidget):
         self.time_label.setText("経過時間：00.0s")
         self.score_label.setText("スコア：---")
         self.progress_bar.setValue(0)
+        self.category_label.setText("")
+        self.hint_label.setText("")
         
         # セッション情報をリセット
         self.session_is_active = False
@@ -698,6 +754,7 @@ class GameScreen(QWidget):
         self.session_current_question = 0
         self.session_scores = []
         self.session_correct_count = 0
+        self.session_used_images = set()  # 使用済み画像もリセット
         self.question_counter_label.setText("問題：---")
         self.next_button.setVisible(False)
         self.load_button.setEnabled(True)
@@ -711,8 +768,28 @@ class GameScreen(QWidget):
             QMessageBox.warning(self, "警告", "先にモードを選択してください")
             return
         
-        # データセットからランダムに画像を選択
-        image_path = self.dataset_loader.get_random_image()
+        # セッション中の場合は、使用済み画像を除外
+        if self.session_is_active:
+            all_images = self.dataset_loader.get_all_images()
+            available_images = [img for img in all_images if img not in self.session_used_images]
+            
+            if not available_images:
+                # 使用可能な画像がない場合（すべて使用済み）
+                QMessageBox.warning(
+                    self,
+                    "警告",
+                    "すべての画像を使用済みです。\n"
+                    "セッションをリセットしてください。",
+                )
+                return
+            
+            # 使用可能な画像からランダムに選択
+            import random
+            image_path = random.choice(available_images)
+            self.session_used_images.add(image_path)  # 使用済みに追加
+        else:
+            # セッション外の場合は通常通りランダム選択
+            image_path = self.dataset_loader.get_random_image()
         
         if image_path is None:
             QMessageBox.warning(
@@ -724,7 +801,7 @@ class GameScreen(QWidget):
             return
         
         # ゲームエンジンの初期化
-        self.game_engine = GameEngine(image_path, self.current_mode)
+        self.game_engine = GameEngine(image_path, self.current_mode, label_loader=self.label_loader)
         self.timer_controller.start()
         self.update_display()
         self.update_timer.start(100)  # 100msごとに更新

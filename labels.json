@@ -1,0 +1,103 @@
+{
+  "a-bird1.jpg": {
+    "answers": ["bird", "鳥", "とり"],
+    "category": "動物",
+    "hint": "空を飛ぶ生き物です"
+  },
+  "a-cat1.jpg": {
+    "answers": ["cat", "猫", "ねこ"],
+    "category": "動物",
+    "hint": "ペットとして人気のある動物です"
+  },
+  "a-dog1.jpg": {
+    "answers": ["dog", "犬", "いぬ"],
+    "category": "動物",
+    "hint": "忠実なペットとして知られています"
+  },
+  "a-horse1.jpg": {
+    "answers": ["horse", "馬", "うま"],
+    "category": "動物",
+    "hint": "人を乗せて走る動物です"
+  },
+  "a-rabbit1.jpg": {
+    "answers": ["rabbit", "うさぎ", "ウサギ"],
+    "category": "動物",
+    "hint": "長い耳が特徴的な動物です"
+  },
+  "f-grape1.jpg": {
+    "answers": ["grape", "ブドウ", "ぶどう", "葡萄"],
+    "category": "果物",
+    "hint": "房になっている甘い果物です"
+  },
+  "f-lemon1.jpg": {
+    "answers": ["lemon", "レモン", "檸檬"],
+    "category": "果物",
+    "hint": "酸っぱい黄色い果物です"
+  },
+  "f-pear1.jpg": {
+    "answers": ["pear", "梨", "なし"],
+    "category": "果物",
+    "hint": "シャリシャリした食感の果物です"
+  },
+  "f-pineapple1.jpg": {
+    "answers": ["pineapple", "パイナップル", "パイン"],
+    "category": "果物",
+    "hint": "トゲトゲした皮の甘い果物です"
+  },
+  "f-strawberry1.jpg": {
+    "answers": ["strawberry", "いちご", "イチゴ", "苺"],
+    "category": "果物",
+    "hint": "赤くて甘い小さな果物です"
+  },
+  "m-bread1.jpg": {
+    "answers": ["bread", "パン"],
+    "category": "食べ物",
+    "hint": "小麦粉から作られる主食です"
+  },
+  "m-friedpotato1.jpg": {
+    "answers": ["friedpotato", "フライドポテト", "ポテトフライ"],
+    "category": "食べ物",
+    "hint": "ジャガイモを揚げた食べ物です"
+  },
+  "m-pizza1.jpg": {
+    "answers": ["pizza", "ピザ", "ピッツァ"],
+    "category": "食べ物",
+    "hint": "チーズとトマトソースを使った料理です"
+  },
+  "m-riceball1.jpg": {
+    "answers": ["riceball", "おにぎり", "おむすび", "お握り"],
+    "category": "食べ物",
+    "hint": "ご飯を丸めて作る日本の食べ物です"
+  },
+  "m-takoyaki1.jpg": {
+    "answers": ["takoyaki", "たこやき", "たこ焼き", "タコ焼き", "タコヤキ"],
+    "category": "食べ物",
+    "hint": "タコが入った丸い食べ物です"
+  },
+  "v-airplane1.jpg": {
+    "answers": ["airplane", "飛行機", "ひこうき", "エアプレーン"],
+    "category": "乗り物",
+    "hint": "空を飛ぶ乗り物です"
+  },
+  "v-bus1.jpg": {
+    "answers": ["bus", "バス"],
+    "category": "乗り物",
+    "hint": "多くの人を乗せて走る乗り物です"
+  },
+  "v-motorbike1.jpg": {
+    "answers": ["motorbike", "バイク", "オートバイ"],
+    "category": "乗り物",
+    "hint": "二輪の乗り物です"
+  },
+  "v-ship1.jpg": {
+    "answers": ["ship", "船", "ふね", "船舶"],
+    "category": "乗り物",
+    "hint": "海を進む乗り物です"
+  },
+  "v-train1.jpg": {
+    "answers": ["train", "電車", "でんしゃ", "列車"],
+    "category": "乗り物",
+    "hint": "レールの上を走る乗り物です"
+  }
+}
+
