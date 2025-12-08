@@ -464,9 +464,22 @@ class GameScreen(QWidget):
         # 回答入力エリア
         answer_layout = QHBoxLayout()
         answer_label = QLabel("回答入力：")
+        answer_label_font = QFont()
+        answer_label_font.setPointSize(14)
+        answer_label.setFont(answer_label_font)
+        
         self.answer_input = QLineEdit()
         self.answer_input.setPlaceholderText("ここに回答を入力してください")
+        self.answer_input.setMinimumHeight(50)  # 高さを大きく
+        input_font = QFont()
+        input_font.setPointSize(16)  # フォントサイズを大きく
+        self.answer_input.setFont(input_font)
+        
         self.submit_button = QPushButton("回答する")
+        self.submit_button.setMinimumHeight(50)  # ボタンの高さも合わせる
+        submit_font = QFont()
+        submit_font.setPointSize(14)
+        self.submit_button.setFont(submit_font)
         self.submit_button.clicked.connect(self.submit_answer)
         self.answer_input.returnPressed.connect(self.submit_answer)
 
