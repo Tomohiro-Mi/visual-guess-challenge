@@ -562,6 +562,7 @@ class GameScreen(QWidget):
     def start_session(self, mode, question_count, hint_mode="halfway"):
         """セッションを開始"""
         self.current_mode = mode
+        self.update_progress_label()
         self.session_question_count = question_count
         self.hint_mode = hint_mode
         self.session_current_question = 1  # 最初の問題を1から開始
@@ -581,6 +582,18 @@ class GameScreen(QWidget):
         """モードを設定（後方互換性のため）"""
         self.current_mode = mode
         self.session_is_active = False
+        self.update_progress_label()
+
+    def update_progress_label(self):
+        """モードに応じてプログレスバーのラベルを更新"""
+        if self.current_mode == "blur":
+            self.progress_bar.setFormat("進行度: %p%")
+        elif self.current_mode == "zoom":
+            self.progress_bar.setFormat("進行度: %p%")
+        elif self.current_mode == "hybrid":
+            self.progress_bar.setFormat("進行度: %p%")
+        else:
+            self.progress_bar.setFormat("進行度: %p%")
 
     def load_image(self):
         """画像を読み込む"""
