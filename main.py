@@ -16,7 +16,8 @@ from PyQt5.QtWidgets import (
     QFileDialog,
     QDesktopWidget,
     QStackedWidget,
-    QCheckBox,
+    QRadioButton,
+    QButtonGroup,
 )
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QPixmap, QImage, QFont
@@ -119,14 +120,14 @@ class HomeScreen(QWidget):
 class GameSetupScreen(QWidget):
     """ゲーム設定画面（モード選択と回数選択を統合）"""
     
-    session_started_signal = pyqtSignal(str, int, bool)  # モード、問題数、ヒント有無を送信
+    session_started_signal = pyqtSignal(str, int, str)  # モード、問題数、ヒントモードを送信
     back_to_home_signal = pyqtSignal()
     
     def __init__(self):
         super().__init__()
         self.selected_mode = None
         self.selected_question_count = 5  # デフォルトは5問
-        self.hint_checkbox = None
+        self.hint_group = None
         self.init_ui()
     
     def init_ui(self):
@@ -222,15 +223,48 @@ class GameSetupScreen(QWidget):
         question_section.addLayout(question_button_layout)
 
         # ヒント設定エリア
-        hint_section = QHBoxLayout()
-        self.hint_checkbox = QCheckBox("ヒントを表示する")
-        self.hint_checkbox.setChecked(True)
-        hint_font = QFont()
-        hint_font.setPointSize(16)
-        self.hint_checkbox.setFont(hint_font)
-        hint_section.addStretch()
-        hint_section.addWidget(self.hint_checkbox)
-        hint_section.addStretch()
+        hint_section = QVBoxLayout()
+        hint_section.setSpacing(10)
+        hint_label = QLabel("ヒント表示設定")
+        hint_label_font = QFont()
+        hint_label_font.setPointSize(18)
+        hint_label_font.setBold(True)
+        hint_label.setFont(hint_label_font)
+        hint_label.setAlignment(Qt.AlignCenter)
+        
+        hint_options_layout = QHBoxLayout()
+        hint_options_layout.setSpacing(30)
+        
+        self.hint_group = QButtonGroup()
+        
+        # ラジオボタンの作成
+        rb_always = QRadioButton("最初から表示")
+        rb_halfway = QRadioButton("50%から表示")
+        rb_none = QRadioButton("表示しない")
+        
+        # フォント設定
+        rb_font = QFont()
+        rb_font.setPointSize(16)
+        rb_always.setFont(rb_font)
+        rb_halfway.setFont(rb_font)
+        rb_none.setFont(rb_font)
+        
+        # グループに追加（IDを設定して識別しやすくする）
+        self.hint_group.addButton(rb_always, 1)
+        self.hint_group.addButton(rb_halfway, 2)
+        self.hint_group.addButton(rb_none, 3)
+        
+        # デフォルト設定（50%から表示）
+        rb_halfway.setChecked(True)
+        
+        hint_options_layout.addStretch()
+        hint_options_layout.addWidget(rb_always)
+        hint_options_layout.addWidget(rb_halfway)
+        hint_options_layout.addWidget(rb_none)
+        hint_options_layout.addStretch()
+        
+        hint_section.addWidget(hint_label)
+        hint_section.addLayout(hint_options_layout)
         
         # ボタン
         button_layout = QHBoxLayout()
@@ -253,11 +287,11 @@ class GameSetupScreen(QWidget):
         # レイアウトの組み立て
         layout.addStretch()
         layout.addWidget(title_label)
-        layout.addSpacing(40)
+        layout.addSpacing(30)
         layout.addLayout(mode_section)
-        layout.addSpacing(40)
+        layout.addSpacing(30)
         layout.addLayout(question_section)
-        layout.addSpacing(20)
+        layout.addSpacing(30)
         layout.addLayout(hint_section)
         layout.addSpacing(40)
         layout.addLayout(button_layout)
@@ -284,10 +318,18 @@ class GameSetupScreen(QWidget):
     def start_session(self):
         """セッションを開始"""
         if self.selected_mode:
+            # ヒントモードの決定
+            hint_mode = "halfway"
+            checked_id = self.hint_group.checkedId()
+            if checked_id == 1:
+                hint_mode = "always"
+            elif checked_id == 3:
+                hint_mode = "none"
+            
             self.session_started_signal.emit(
                 self.selected_mode, 
                 self.selected_question_count,
-                self.hint_checkbox.isChecked()
+                hint_mode
             )
         else:
             QMessageBox.warning(self, "警告", "モードを選択してください")
@@ -409,7 +451,7 @@ class GameScreen(QWidget):
         self.session_correct_count = 0  # 正解数
         self.session_is_active = False  # セッションが有効か
         self.session_used_images = set()  # セッション中に使用した画像のパスを記録
-        self.show_hint = True  # ヒント表示フラグ
+        self.hint_mode = "halfway"  # ヒント表示モード ("always", "halfway", "none")
 
         self.init_ui()
 
@@ -517,11 +559,11 @@ class GameScreen(QWidget):
         
         self.setLayout(main_layout)
     
-    def start_session(self, mode, question_count, show_hint=True):
+    def start_session(self, mode, question_count, hint_mode="halfway"):
         """セッションを開始"""
         self.current_mode = mode
         self.session_question_count = question_count
-        self.show_hint = show_hint
+        self.hint_mode = hint_mode
         self.session_current_question = 1  # 最初の問題を1から開始
         self.session_scores = []
         self.session_correct_count = 0
@@ -594,18 +636,27 @@ class GameScreen(QWidget):
     
     def update_hint_display(self, progress=0.0):
         """
-        ヒント情報を表示（進行度が50%を超えた場合のみ）
+        ヒント情報を表示（設定に応じて表示タイミングを制御）
         
         Args:
             progress: 進行度（0.0-1.0）
         """
-        if not self.game_engine or not self.show_hint:
+        if not self.game_engine:
             self.category_label.setText("")
             self.hint_label.setText("")
             return
+            
+        # ヒント表示判定
+        should_show = False
+        if self.hint_mode == "always":
+            should_show = True
+        elif self.hint_mode == "halfway":
+            if progress > 0.5:
+                should_show = True
+        elif self.hint_mode == "none":
+            should_show = False
         
-        # 進行度が50%を超えている場合のみヒントを表示
-        if progress > 0.5:
+        if should_show:
             category = self.game_engine.get_category()
             hint = self.game_engine.get_hint()
             
@@ -619,7 +670,7 @@ class GameScreen(QWidget):
             else:
                 self.hint_label.setText("")
         else:
-            # 進行度が50%以下の場合はヒントを非表示
+            # ヒントを非表示
             self.category_label.setText("")
             self.hint_label.setText("")
 
@@ -899,9 +950,9 @@ class MainWindow(QMainWindow):
         """ゲーム設定画面を表示"""
         self.stacked_widget.setCurrentWidget(self.game_setup_screen)
     
-    def start_session(self, mode, question_count, show_hint):
+    def start_session(self, mode, question_count, hint_mode):
         """セッションを開始"""
-        self.game_screen.start_session(mode, question_count, show_hint)
+        self.game_screen.start_session(mode, question_count, hint_mode)
         self.stacked_widget.setCurrentWidget(self.game_screen)
     
     def start_game(self, mode):
