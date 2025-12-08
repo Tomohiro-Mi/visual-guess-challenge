@@ -586,14 +586,8 @@ class GameScreen(QWidget):
 
     def update_progress_label(self):
         """モードに応じてプログレスバーのラベルを更新"""
-        if self.current_mode == "blur":
-            self.progress_bar.setFormat("進行度: %p%")
-        elif self.current_mode == "zoom":
-            self.progress_bar.setFormat("進行度: %p%")
-        elif self.current_mode == "hybrid":
-            self.progress_bar.setFormat("進行度: %p%")
-        else:
-            self.progress_bar.setFormat("進行度: %p%")
+        self.progress_bar.setFormat("進行度: %p%")
+
 
     def load_image(self):
         """画像を読み込む"""
